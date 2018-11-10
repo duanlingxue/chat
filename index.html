@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>啦啦啦</title>
+    <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css">
+</head>
+<style>
+    html,body{
+        height: 100%;
+    }
+    body{
+        display: flex;
+        justify-content: center;align-items: center;
+    }
+    .main-box{
+        width: 600px;
+        height: 700px;
+        
+    }
+    .main-box .panel{
+        height: 100%;margin: 0;
+        display: flex;
+        flex-flow: column;
+    }
+    .main-box .room-box {
+        flex-grow: 1;
+        flex-shrink: 1;
+    }
+    .room{
+        height: 570px;
+        padding: 10px;
+        border-bottom: 1px solid #ccc;
+        overflow-y:auto; 
+    }
+    .inp-box{
+        padding-top: 10px;
+        display: flex;
+        justify-content: space-around;
+    }
+    .inp-box input{
+        width: 85%;
+    }
+    .list-group-item{
+        border: none;
+    }
+    .list-group-item.friend{
+        display: flex;
+        align-items: center;
+    }
+    .friend .btn-info{
+        background-color: #ff0000;
+        color : #fff;
+    }
+    .list-group-item.me{
+        display: flex;
+        flex-direction: row-reverse;
+        align-items: center;
+    }
+</style>
+<body>
+
+    <div class="main-box">
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                聊天室
+                <input id="nick" type="text" value="新朋友" class="form-control pull-right" style="width:150px;">
+            </div>
+            <div class="panel-body room-box">
+                <div class="room">
+                    <ul class="list-group">
+                    </ul>
+                </div>
+                <div class="inp-box">
+                    <input id="inp" type="text" class="form-control">
+                    <button onclick="say()" class="btn btn-success">发送</button>
+                    <button onclick="pic()" class="btn btn-success" style="margin: 0 10px;">图片</button>
+                    <!--<form id="pic_form"  action="172.20.248.88:3000">-->
+                        <input type="file" name="params" style="display: none" class="pic_up" id="file1" accept="image/gif, image/jpeg" onchange="pic_change(value)"/>
+                    <!--</form>-->
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
+    <script src="base64.js"></script>
+    <script>
+        // import { Base64 } from 'js-base64';
+       var ws = new WebSocket("ws://172.20.248.88:3000");
+       //连接上服务端的时候
+       ws.onopen = function(){
+           send('234');
+       }
+       //客户端接受数据从服务端
+       ws.onmessage=function(event){
+           var messageInfo = JSON.parse(event.data)
+           console.log(messageInfo);
+            let str ='';
+
+            if(messageInfo.type==1){
+                str = `
+                <p style="font-size:0.8em;color:#ccc" class="text-center">新朋友加入聊天室</p>
+                `
+            }else if(messageInfo.type==2){
+                str = `
+                <p style="font-size:0.8em;color:#ccc" class="text-center">${messageInfo.user}下线了</p>
+                `
+            }else{
+                str =`
+                    <li class="list-group-item ${messageInfo.isMe?'me':'friend'}">
+                        <span>${messageInfo.user}</span>
+                        <button class="btn btn-info">${messageInfo.message}</button>
+                    </li>
+                `
+            }
+
+           
+           $('ul').append(str);
+       }
+
+       ws.onclose=function(){
+           alert('服务器已经关闭了')
+       }
+
+       ws.onerror=function(err){
+           alert('出现了错误'+JSON.stringify(err))
+       }
+
+       $("#inp").keyup(function (e) {
+            if(e.keyCode==13){
+                say()
+            }
+        })
+
+       function say() {
+           if($("#inp").val()==""){
+                return;
+           }
+
+         var a=  $("#inp").val().replace(/[<]/g,"&lt;")
+         console.log(a)
+            send(a)
+
+            $("#inp").val('')
+        }
+        function send(word) {
+            var message = {
+                word,
+                nickname : $("#nick").val()
+            }
+            ws.send(JSON.stringify(message));
+        }
+        function pic() {
+            $('.pic_up').click();
+        }
+        function pic_change(data) {
+           console.log(Base64)
+           // console.log(Base64.encode(data))
+            ws.send(data)
+        }
+    </script>
+</body>
+</html>
